@@ -12,12 +12,19 @@ class PhyloNode {
     String baseName = parts[0];
     String hexColor = parts.length > 1 ? parts[1] : null;
     this.label = baseName;
-    File file = new File(sketchPath() + "/data/png/" + baseName + ".png");
-    if (file.exists()) {
-      sprite = loadImage("png/" + baseName + ".png");
-    }
+    
+    // Use preloaded sprites if available
+    this.sprite = sprites.getOrDefault(baseName, null);
+    
+    // Handle color parsing with error checking
     if (hexColor != null && hexColor.length() == 6) {
-      branchColor = unhex("FF" + hexColor);
+      try {
+        branchColor = unhex("FF" + hexColor);
+      } catch (Exception e) {
+        branchColor = #AAAAAA; // Default gray on error
+      }
+    } else {
+      branchColor = #AAAAAA; // Default color
     }
   }
 
@@ -36,38 +43,76 @@ class PhyloNode {
   }
 }
 
+// Global variables
 PhyloNode root;
 HashMap<PhyloNode, Float> angles = new HashMap<PhyloNode, Float>();
 HashMap<PhyloNode, Float> radii = new HashMap<PhyloNode, Float>();
 float maxDepth;
 boolean saveImage = false;
+PhyloNode hoveredNode = null;
 
-void setup() {
-  size(3000, 3000);
-  imageMode(CENTER);
-  noFill();
-  strokeWeight(3);
-  loadTree("testTree.nwk");
-  buildMenuBar();
-}
+// Image caching
+HashMap<String, PImage> sprites = new HashMap<String, PImage>();
 
-void loadTree(String url) {
-  String newick = join(loadStrings(url), "");
-  root = parseNewick(newick);
-
-  maxDepth = calcMaxDepth(root, 0);
-  calcLayout(root, 0, HALF_PI + 0.1, TAU - 0.1);
-}
-
+// View controls
 float userScale = 0;
 float userTranslateX = 0;
 float userTranslateY = 0;
 
+void setup() {
+  size(3000, 3000, P2D);
+  smooth(8);  // Enable anti-aliasing
+  imageMode(CENTER);
+  noFill();
+  strokeWeight(3);
+  
+  // Preload all sprites
+  preloadSprites();
+  loadTree("testTree.nwk");
+  buildMenuBar();
+}
+
+void preloadSprites() {
+  File dir = new File(sketchPath() + "/data/png/");
+  if (dir.exists() && dir.isDirectory()) {
+    File[] files = dir.listFiles();
+    for (File file : files) {
+      if (file.isFile() && file.getName().toLowerCase().endsWith(".png")) {
+        String name = file.getName().substring(0, file.getName().lastIndexOf('.'));
+        sprites.put(name, loadImage("png/" + file.getName()));
+      }
+    }
+  }
+}
+
+void loadTree(String url) {
+  try {
+    String newick = join(loadStrings(url), "");
+    root = parseNewick(newick);
+    updateTreeLayout();
+  } catch (Exception e) {
+    println("Error loading tree: " + e.getMessage());
+    // Create empty root node to prevent crashes
+    root = new PhyloNode("Root", 0);
+  }
+}
+
+void updateTreeLayout() {
+  maxDepth = calcMaxDepth(root, 0);
+  angles.clear();
+  radii.clear();
+  calcLayout(root, 0, HALF_PI + 0.1, TAU - 0.1);
+}
+
 void draw() {
   background(255);
+  pushMatrix();
   translate(width/2 + userTranslateX, height/2 + userTranslateY);
   float scale = min(width, height) * 0.45 / (maxDepth + 1);
+  hoveredNode = null;  // Reset hover state
   drawNode(root, 0, 0, scale + userScale);
+  popMatrix();
+  
   if (saveImage) {
     JFileChooser chooser = new JFileChooser(sketchPath());
     FileNameExtensionFilter filter = new FileNameExtensionFilter("PNG image", "png");
@@ -76,14 +121,18 @@ void draw() {
     if (returnVal == JFileChooser.APPROVE_OPTION) {
       String path = chooser.getSelectedFile().getPath();
       if (!path.endsWith(".png")) path += ".png";
-      saveAsNewick(root, path);
+      save(path);
     }
     saveImage = false;
   }
 }
 
 void mouseWheel(processing.event.MouseEvent event) {
-  userScale -= event.getCount() * 10;
+  float zoomChange = event.getCount() * 10;
+  // Set minimum zoom boundary
+  if (userScale + zoomChange > -min(width, height)*0.4) {
+    userScale += zoomChange;
+  }
 }
 
 PVector mouseDelta = new PVector();
@@ -95,6 +144,19 @@ void mouseDragged() {
   userTranslateX += mouseX - mouseDelta.x;
   userTranslateY += mouseY - mouseDelta.y;
   mouseDelta.set(mouseX, mouseY);
+}
+
+void mouseReleased() {
+  if (hoveredNode != null && !dialogOpened) {
+    dialogOpened = true;
+    EditNodeDialog dialog = new EditNodeDialog(this, hoveredNode.label, hoveredNode.branchColor);
+    if (dialog.confirmed) {
+      hoveredNode.label = dialog.newName;
+      hoveredNode.changeColor(dialog.newColor);
+      updateTreeLayout(); // Update layout after changes
+    }
+    dialogOpened = false;
+  }
 }
 
 float calcMaxDepth(PhyloNode node, float depth) {
@@ -132,6 +194,14 @@ int countLeaves(PhyloNode node) {
   return sum;
 }
 
+boolean isOnScreen(float x, float y, float scale) {
+  float screenX = x + width/2 + userTranslateX;
+  float screenY = y + height/2 + userTranslateY;
+  float nodeSize = 50 * abs(scale)/min(width, height);
+  return screenX > -nodeSize && screenX < width + nodeSize && 
+         screenY > -nodeSize && screenY < height + nodeSize;
+}
+
 boolean dialogOpened = false;
 
 void drawNode(PhyloNode node, float cx, float cy, float scale) {
@@ -139,20 +209,29 @@ void drawNode(PhyloNode node, float cx, float cy, float scale) {
   float radius = radii.get(node) * scale;
   float x = cx + cos(angle) * radius;
   float y = cy - sin(angle) * radius;
+  
+  // Only draw if node is visible
+  if (!isOnScreen(x, y, scale)) return;
 
   for (PhyloNode child : node.children) {
     float cAngle = angles.get(child);
     float cRadius = radii.get(child) * scale;
-    float cX1 = cx + cos(cAngle) * radius;
-    float cY1 = cy - sin(cAngle) * radius;
-    float cX2 = cx + cos(cAngle) * cRadius;
-    float cY2 = cy - sin(cAngle) * cRadius;
+    float cX = cx + cos(cAngle) * cRadius;
+    float cY = cy - sin(cAngle) * cRadius;
 
+    // Draw branch
     stroke(child.branchColor);
-    line(cX1, cY1, cX2, cY2);
-    float start = min(angle, cAngle);
-    float end = max(angle, cAngle);
-    arc(0, 0, radius * 2, radius * 2, -end, -start);
+    line(x, y, cX, cY);
+    
+    // Draw arc for parent branch
+    if (node != root) {
+      float parentRadius = radii.get(node) * scale - node.branchLength * scale;
+      float parentAngle = angles.get(node);
+      float start = min(parentAngle, angle);
+      float end = max(parentAngle, angle);
+      noFill();
+      arc(cx, cy, parentRadius * 2, parentRadius * 2, -end, -start);
+    }
 
     drawNode(child, cx, cy, scale);
   }
@@ -160,45 +239,38 @@ void drawNode(PhyloNode node, float cx, float cy, float scale) {
   float nodeRadius = 16;
   boolean isHovered = dist(mouseX - width/2 - userTranslateX, mouseY - height/2 - userTranslateY, x, y) < nodeRadius;
 
-  if (mousePressed && isHovered && !dialogOpened) {
-    dialogOpened = true;
-    EditNodeDialog dialog = new EditNodeDialog(this, node.label, node.branchColor);
-    if (dialog.confirmed) {
-      node.label = dialog.newName;
-      node.changeColor(dialog.newColor);
-    }
+  if (isHovered) {
+    hoveredNode = node;
+    
+    // Draw tooltip
+    float tooltipOffset = 24;
+    float angleToCenter = atan2(cy - y, x - cx);
+    float tx = x + cos(angleToCenter) * tooltipOffset;
+    float ty = y - sin(angleToCenter) * tooltipOffset;
+
+    pushStyle();
+    float tw = textWidth(node.label) + 10;
+    float th = 20;
+    noStroke();
+    fill(255, 230);
+    rect(tx - tw/2, ty - th/2, tw, th, 5);
+    fill(0);
+    textAlign(CENTER, CENTER);
+    text(node.label, tx, ty);
+    popStyle();
   }
 
+  // Draw node
   if (node.sprite != null) {
     image(node.sprite, x, y, 32, 32);
   } else {
     pushStyle();
     noStroke();
     fill(node.branchColor);
-    if (isHovered) circle(x, y, 16);
-    popStyle();
-  }
-
-  if (isHovered) {
-    float tooltipOffset = 24;
-    float angleToCenter = atan2(cy - y, x - cx);
-    float tx = x + cos(angleToCenter) * tooltipOffset;
-    float ty = y - sin(angleToCenter) * tooltipOffset;
-
-    float tw = textWidth(node.label) + 6;
-    float th = 16;
-
-    pushStyle();
-    noStroke();
-    fill(255);
-    rect(tx - tw / 2, ty - th / 2, tw, th, 4);
-    fill(0);
-    textAlign(CENTER, CENTER);
-    text(node.label, tx, ty);
+    ellipse(x, y, isHovered ? 16 : 12, isHovered ? 16 : 12);
     popStyle();
   }
 }
-
 
 PhyloNode parseNewick(String nwk) {
   nwk = nwk.trim();
@@ -208,14 +280,16 @@ PhyloNode parseNewick(String nwk) {
 }
 
 PhyloNode parseNode(String nwk, int[] index) {
+  if (index[0] >= nwk.length()) return new PhyloNode("Error", 0);
+  
   if (nwk.charAt(index[0]) == '(') {
     index[0]++;
     ArrayList<PhyloNode> children = new ArrayList<PhyloNode>();
-    while (nwk.charAt(index[0]) != ')') {
+    while (index[0] < nwk.length() && nwk.charAt(index[0]) != ')') {
       children.add(parseNode(nwk, index));
-      if (nwk.charAt(index[0]) == ',') index[0]++;
+      if (index[0] < nwk.length() && nwk.charAt(index[0]) == ',') index[0]++;
     }
-    index[0]++;
+    if (index[0] < nwk.length() && nwk.charAt(index[0]) == ')') index[0]++;
 
     String label = "";
     float length = 0;
@@ -231,10 +305,17 @@ PhyloNode parseNode(String nwk, int[] index) {
     if (index[0] < nwk.length() && nwk.charAt(index[0]) == ':') {
       index[0]++;
       int start = index[0];
-      while (index[0] < nwk.length() && (Character.isDigit(nwk.charAt(index[0])) || nwk.charAt(index[0]) == '.' || nwk.charAt(index[0]) == 'E' || nwk.charAt(index[0]) == '-' || nwk.charAt(index[0]) == '+')) {
+      while (index[0] < nwk.length() && (Character.isDigit(nwk.charAt(index[0])) || nwk.charAt(index[0]) == '.' || 
+             nwk.charAt(index[0]) == 'E' || nwk.charAt(index[0]) == 'e' || 
+             nwk.charAt(index[0]) == '-' || nwk.charAt(index[0]) == '+')) {
         index[0]++;
       }
-      length = Float.parseFloat(nwk.substring(start, index[0]));
+      String lengthStr = nwk.substring(start, index[0]).replace(',', '.');
+      try {
+        length = Float.parseFloat(lengthStr);
+      } catch (NumberFormatException e) {
+        length = 1.0; // Default length
+      }
     }
 
     PhyloNode node = new PhyloNode(label, length);
@@ -251,11 +332,21 @@ PhyloNode parseNode(String nwk, int[] index) {
     if (index[0] < nwk.length() && nwk.charAt(index[0]) == ':') {
       index[0]++;
       int startLen = index[0];
-      while (index[0] < nwk.length() && (Character.isDigit(nwk.charAt(index[0])) || nwk.charAt(index[0]) == '.' || nwk.charAt(index[0]) == 'E' || nwk.charAt(index[0]) == '-' || nwk.charAt(index[0]) == '+')) {
+      while (index[0] < nwk.length() && (Character.isDigit(nwk.charAt(index[0])) || nwk.charAt(index[0]) == '.' || 
+             nwk.charAt(index[0]) == 'E' || nwk.charAt(index[0]) == 'e' || 
+             nwk.charAt(index[0]) == '-' || nwk.charAt(index[0]) == '+')) {
         index[0]++;
       }
-      length = Float.parseFloat(nwk.substring(startLen, index[0]));
+      String lengthStr = nwk.substring(startLen, index[0]).replace(',', '.');
+      try {
+        length = Float.parseFloat(lengthStr);
+      } catch (NumberFormatException e) {
+        length = 1.0; // Default length
+      }
     }
+    
+    // Handle empty labels
+    if (label.isEmpty()) label = "Node_" + (int)random(10000);
 
     return new PhyloNode(label, length);
   }

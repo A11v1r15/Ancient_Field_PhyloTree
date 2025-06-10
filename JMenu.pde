@@ -113,8 +113,8 @@ public class CreditsPopUp {
   public CreditsPopUp(PApplet app) {
     chain = app;
     playersPanel.setText("<html>Click and drag the mouse to navigate<br>"+
-      "<html>Scrol the wheel to zoom in/out<br>"+
-      "<html>Click in the node to change the color and label<br><br>"+
+      "<html>Scroll the wheel to zoom in/out<br>"+
+      "<html>Click on a node to change its color and label<br><br>"+
       "App created by <a href='https://github.com/a11v1r15/'>A11v1r15</a></html>");
     playersPanel.setVerticalAlignment(JLabel.NORTH);
     parent.setLayout(new FlowLayout());
@@ -181,13 +181,11 @@ class EditNodeDialog extends JDialog {
       java.awt.Color chosen = colorChooser.getColor();
       newColor = parent.color(chosen.getRed(), chosen.getGreen(), chosen.getBlue());
       confirmed = true;
-      dialogOpened = false;
       dispose();
     }
     );
 
     cancelButton.addActionListener(e -> {
-      dialogOpened = false;
       dispose();
     }
     );
