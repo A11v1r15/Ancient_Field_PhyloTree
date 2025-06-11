@@ -136,7 +136,7 @@ public class SubtitlesPopUp {
     ArrayList<PhyloNode> coloredNodes = getColoredNodes(root);
     String text = "<html>";
     for (PhyloNode node : coloredNodes) {
-      if (node.children.size() != 0 && !node.label.equals(""))
+      if (!node.label.equals("") && node.branchColor != node.parent.branchColor)
         text += ("<span style='color: #" + hex(node.branchColor, 6) + ";'>■</span> " + node.label + "<br>");
     }
     playersPanel.setText(text + "</html>");

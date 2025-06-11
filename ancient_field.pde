@@ -1,6 +1,7 @@
 class PhyloNode {
   String label;
   ArrayList<PhyloNode> children = new ArrayList<PhyloNode>();
+  PhyloNode parent;
   float branchLength;
   PImage sprite;
   color branchColor = 0;
@@ -31,6 +32,7 @@ class PhyloNode {
     if (child.branchColor == 0)
       child.branchColor = branchColor;
     children.add(child);
+    child.parent = this;
     return this;
   }
 
