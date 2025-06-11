@@ -68,6 +68,9 @@ float userTranslateY = 0;
 void setup() {
   size(800, 600); // Smaller initial size
   surface.setResizable(true); // Enable window resizing
+  
+  prefs.load();
+  if (prefs.smoothRendering) smooth();
 
   treeCanvas = createGraphics(width, height);
   imageMode(CENTER);
@@ -124,7 +127,7 @@ void draw() {
 
 void renderTree(PGraphics pg, float scale) {
   pg.beginDraw();
-  pg.background(255);
+  pg.background(prefs.backgroundColor);
   pg.pushMatrix();
   pg.translate(pg.width/2 + userTranslateX, pg.height/2 + userTranslateY);
 
@@ -175,7 +178,7 @@ void drawNodes(PGraphics pg, PhyloNode node, float cx, float cy, float scale) {
   float nodeRadius = 16;
   boolean isHovered = dist(mouseX - width/2 - userTranslateX, mouseY - height/2 - userTranslateY, x, y) < nodeRadius;
 
-  if (node.sprite != null) {
+  if (prefs.useImages && node.sprite != null) {
     pg.image(node.sprite, x, y, isHovered ? 48 : 32, isHovered ? 48 : 32);
   } else {
     pg.pushStyle();
@@ -202,7 +205,7 @@ void drawTooltips(PGraphics pg, PhyloNode node, float cx, float cy, float scale)
   float nodeRadius = 16;
   boolean isHovered = dist(mouseX - width/2 - userTranslateX, mouseY - height/2 - userTranslateY, x, y) < nodeRadius;
 
-  if (isHovered && !node.label.isEmpty()) {
+  if ((prefs.alwaysShowTooltips || isHovered) && !node.label.isEmpty()) {
     float tw = textWidth(node.label) + 10;
     float th = 20;
 

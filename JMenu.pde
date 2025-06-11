@@ -20,6 +20,7 @@ public class Menu_bar extends JFrame implements ActionListener {
   JMenu options_menu = new JMenu("Options");
   JMenuItem reset_view = new JMenuItem("Reset View");
   JMenuItem subtitles = new JMenuItem("Subtitles");
+  JMenuItem preferences = new JMenuItem("Preferences");
 
   JMenu about_menu = new JMenu("About");
   JMenuItem help = new JMenuItem("Help");
@@ -56,8 +57,10 @@ public class Menu_bar extends JFrame implements ActionListener {
     menu_bar.add(options_menu);
     reset_view.addActionListener(this);
     subtitles.addActionListener(this);
+    preferences.addActionListener(this);
     options_menu.add(reset_view);
     options_menu.add(subtitles);
+    options_menu.add(preferences);
 
     menu_bar.add(about_menu);
     help.addActionListener(this);
@@ -94,6 +97,8 @@ public class Menu_bar extends JFrame implements ActionListener {
       userTranslateY = 0;
     } else if (source == subtitles) {
       SubtitlesPopUp subtitlesPopUp = new SubtitlesPopUp(chain);
+    } else if (source == preferences) {
+      PreferencesDialog preferencesDialog = new PreferencesDialog(chain);
     } else if (source == help) {
       CreditsPopUp creditsPopUp = new CreditsPopUp(chain);
     }
@@ -194,6 +199,78 @@ class EditNodeDialog extends JDialog {
     buttonPanel.add(cancelButton);
     add(buttonPanel, BorderLayout.SOUTH);
 
+    pack();
+    setLocationRelativeTo(null);
+    setVisible(true);
+  }
+}
+
+class PreferencesDialog extends JDialog {
+  public PreferencesDialog(PApplet parent) {
+    super((JFrame) ((processing.awt.PSurfaceAWT.SmoothCanvas) parent.getSurface().getNative()).getFrame(), "Preferences", true);
+    setLayout(new GridLayout(0, 2, 10, 10));
+    
+    // Dark Mode
+    add(new JLabel("Dark Mode:"));
+    JCheckBox darkModeBox = new JCheckBox("", prefs.darkMode);
+    add(darkModeBox);
+    
+    // Tooltips
+    add(new JLabel("Always Show Tooltips:"));
+    JCheckBox tooltipsBox = new JCheckBox("", prefs.alwaysShowTooltips);
+    add(tooltipsBox);
+    
+    // Images
+    add(new JLabel("Use Images:"));
+    JCheckBox imagesBox = new JCheckBox("", prefs.useImages);
+    add(imagesBox);
+    
+    // Node Labels
+    add(new JLabel("Show Node Labels:"));
+    JCheckBox labelsBox = new JCheckBox("", prefs.showNodeLabels);
+    add(labelsBox);
+    
+    // Smooth Rendering
+    add(new JLabel("Smooth Rendering:"));
+    JCheckBox smoothBox = new JCheckBox("", prefs.smoothRendering);
+    add(smoothBox);
+    
+    // Background Color
+    add(new JLabel("Background Color:"));
+    JButton colorButton = new JButton("Choose");
+    colorButton.setBackground(new java.awt.Color(prefs.backgroundColor));
+    colorButton.addActionListener(e -> {
+      java.awt.Color newColor = JColorChooser.showDialog(this, "Choose Background Color", colorButton.getBackground());
+      if (newColor != null) {
+        colorButton.setBackground(newColor);
+      }
+    });
+    add(colorButton);
+    
+    // Buttons
+    JButton saveButton = new JButton("Save");
+    JButton cancelButton = new JButton("Cancel");
+    
+    saveButton.addActionListener(e -> {
+      prefs.darkMode = darkModeBox.isSelected();
+      prefs.alwaysShowTooltips = tooltipsBox.isSelected();
+      prefs.useImages = imagesBox.isSelected();
+      prefs.showNodeLabels = labelsBox.isSelected();
+      prefs.smoothRendering = smoothBox.isSelected();
+      prefs.backgroundColor = colorButton.getBackground().getRGB();
+      prefs.save();
+      dispose();
+    });
+    
+    cancelButton.addActionListener(e -> dispose());
+    
+    JPanel buttonPanel = new JPanel();
+    buttonPanel.add(saveButton);
+    buttonPanel.add(cancelButton);
+    
+    add(new JLabel()); // Spacer
+    add(buttonPanel);
+    
     pack();
     setLocationRelativeTo(null);
     setVisible(true);
