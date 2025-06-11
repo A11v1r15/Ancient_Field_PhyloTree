@@ -201,7 +201,6 @@ void drawNode(PhyloNode node, float cx, float cy, float scale) {
   float x = cx + cos(angle) * radius;
   float y = cy - sin(angle) * radius;
 
-
   for (PhyloNode child : node.children) {
     float cAngle = angles.get(child);
     float cRadius = radii.get(child) * scale;
@@ -225,34 +224,36 @@ void drawNode(PhyloNode node, float cx, float cy, float scale) {
 
   // Draw node
   if (node.sprite != null) {
-    image(node.sprite, x, y, 32, 32);
+    image(node.sprite, x, y, isHovered ? 48 : 32, isHovered ? 48 : 32);
   } else {
     pushStyle();
     noStroke();
     fill(node.branchColor);
-    ellipse(x, y, isHovered ? 16 : 12, isHovered ? 16 : 12);
+    circle(x, y, isHovered ? 16 : 8);
     popStyle();
   }
 
   if (isHovered) {
     hoveredNode = node;
+    if (!node.label.isEmpty()) {
+      float tw = textWidth(node.label) + 10;
 
-    // Draw tooltip
-    float tooltipOffset = 24;
-    float angleToCenter = atan2(cy - y, x - cx);
-    float tx = x + cos(angleToCenter) * tooltipOffset;
-    float ty = y - sin(angleToCenter) * tooltipOffset;
+      // Draw tooltip
+      float tooltipOffset = 24;
+      float angleToCenter = atan2(cy - y, x - cx);
+      float tx = x + cos(angleToCenter) * (tooltipOffset + tw/2);
+      float ty = y - sin(angleToCenter) * tooltipOffset;
 
-    pushStyle();
-    float tw = textWidth(node.label) + 10;
-    float th = 20;
-    noStroke();
-    fill(255, 230);
-    rect(tx - tw/2, ty - th/2, tw, th, 5);
-    fill(0);
-    textAlign(CENTER, CENTER);
-    text(node.label, tx, ty);
-    popStyle();
+      pushStyle();
+      float th = 20;
+      noStroke();
+      fill(255, 230);
+      rect(tx - tw/2, ty - th/2, tw, th, 5);
+      fill(0);
+      textAlign(CENTER, CENTER);
+      text(node.label, tx, ty);
+      popStyle();
+    }
   }
 }
 
