@@ -7,8 +7,26 @@ class PhyloNode {
   color branchColor = 0;
 
   PhyloNode(String label, float branchLength) {
+    this.changeLabel(label);
     this.branchLength = branchLength;
-    this.label = label;
+  }
+
+  PhyloNode addChild(PhyloNode child) {
+    if (child.branchColor == 0)
+      child.branchColor = branchColor;
+    children.add(child);
+    child.parent = this;
+    return this;
+  }
+
+  PhyloNode changeColor(color c) {
+    branchColor = c;
+    for (PhyloNode child : children)
+      child.changeColor(branchColor);
+    return this;
+  }
+
+  PhyloNode changeLabel(String label) {
     String[] parts = label.split("#");
     String baseName = parts[0];
     String hexColor = parts.length > 1 ? parts[1] : null;
@@ -26,20 +44,6 @@ class PhyloNode {
         println(hexColor + " is not a valid color for " + baseName);
       }
     }
-  }
-
-  PhyloNode addChild(PhyloNode child) {
-    if (child.branchColor == 0)
-      child.branchColor = branchColor;
-    children.add(child);
-    child.parent = this;
-    return this;
-  }
-
-  PhyloNode changeColor(color c) {
-    branchColor = c;
-    for (PhyloNode child : children)
-      child.changeColor(branchColor);
     return this;
   }
 }
@@ -152,7 +156,7 @@ void mouseReleased() {
     dialogOpened = true;
     EditNodeDialog dialog = new EditNodeDialog(this, hoveredNode.label, hoveredNode.branchColor);
     if (dialog.confirmed) {
-      hoveredNode.label = dialog.newName;
+      hoveredNode.changeLabel(dialog.newName);
       hoveredNode.changeColor(dialog.newColor);
       updateTreeLayout(); // Update layout after changes
     }
