@@ -165,18 +165,18 @@ class EditNodeDialog extends JDialog {
 
     setLayout(new BorderLayout());
 
-    // Campo de nome
+    // Name field
     JPanel namePanel = new JPanel(new FlowLayout());
     namePanel.add(new JLabel("Name:"));
     JTextField nameField = new JTextField(currentName, 20);
     namePanel.add(nameField);
     add(namePanel, BorderLayout.NORTH);
 
-    // Seletor de cor
+    // Color selector
     JColorChooser colorChooser = new JColorChooser(new java.awt.Color(currentColor));
     add(colorChooser, BorderLayout.CENTER);
 
-    // Botões
+    // Buttons
     JPanel buttonPanel = new JPanel();
     JButton okButton = new JButton("OK");
     JButton cancelButton = new JButton("Cancel");
@@ -210,11 +210,6 @@ class PreferencesDialog extends JDialog {
     super((JFrame) ((processing.awt.PSurfaceAWT.SmoothCanvas) parent.getSurface().getNative()).getFrame(), "Preferences", true);
     setLayout(new GridLayout(0, 2, 10, 10));
     
-    // Dark Mode
-    add(new JLabel("Dark Mode:"));
-    JCheckBox darkModeBox = new JCheckBox("", prefs.darkMode);
-    add(darkModeBox);
-    
     // Tooltips
     add(new JLabel("Always Show Tooltips:"));
     JCheckBox tooltipsBox = new JCheckBox("", prefs.alwaysShowTooltips);
@@ -226,14 +221,9 @@ class PreferencesDialog extends JDialog {
     add(imagesBox);
     
     // Node Labels
-    add(new JLabel("Show Node Labels:"));
-    JCheckBox labelsBox = new JCheckBox("", prefs.showNodeLabels);
+    add(new JLabel("Show Nodes:"));
+    JCheckBox labelsBox = new JCheckBox("", prefs.showNodes);
     add(labelsBox);
-    
-    // Smooth Rendering
-    add(new JLabel("Smooth Rendering:"));
-    JCheckBox smoothBox = new JCheckBox("", prefs.smoothRendering);
-    add(smoothBox);
     
     // Background Color
     add(new JLabel("Background Color:"));
@@ -247,17 +237,28 @@ class PreferencesDialog extends JDialog {
     });
     add(colorButton);
     
+    // Branch Color
+    add(new JLabel("Default Branch Color:"));
+    JButton colorButtonB = new JButton("Choose");
+    colorButtonB.setBackground(new java.awt.Color(prefs.branchColor));
+    colorButtonB.addActionListener(e -> {
+      java.awt.Color newColor = JColorChooser.showDialog(this, "Choose Default Branch Color", colorButton.getBackground());
+      if (newColor != null) {
+        colorButtonB.setBackground(newColor);
+      }
+    });
+    add(colorButtonB);
+    
     // Buttons
     JButton saveButton = new JButton("Save");
     JButton cancelButton = new JButton("Cancel");
     
     saveButton.addActionListener(e -> {
-      prefs.darkMode = darkModeBox.isSelected();
       prefs.alwaysShowTooltips = tooltipsBox.isSelected();
       prefs.useImages = imagesBox.isSelected();
-      prefs.showNodeLabels = labelsBox.isSelected();
-      prefs.smoothRendering = smoothBox.isSelected();
+      prefs.showNodes = labelsBox.isSelected();
       prefs.backgroundColor = colorButton.getBackground().getRGB();
+      prefs.branchColor = colorButtonB.getBackground().getRGB();
       prefs.save();
       dispose();
     });

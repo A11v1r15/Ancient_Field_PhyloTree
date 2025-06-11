@@ -46,6 +46,10 @@ class PhyloNode {
     }
     return this;
   }
+  
+  color getBranchColor(){
+    return branchColor == 0 ? prefs.branchColor : branchColor;
+  }
 }
 
 // Global variables
@@ -70,7 +74,6 @@ void setup() {
   surface.setResizable(true); // Enable window resizing
   
   prefs.load();
-  if (prefs.smoothRendering) smooth();
 
   treeCanvas = createGraphics(width, height);
   imageMode(CENTER);
@@ -119,17 +122,17 @@ void draw() {
   float scale = min(width, height) * 0.45 / (maxDepth + 1) + userScale;
 
   treeCanvas = createGraphics(width, height);
-  renderTree(treeCanvas, scale);
+  renderTree(treeCanvas, scale, userTranslateX, userTranslateY);
   image(treeCanvas, width/2, height/2);
 
   saveImageCheck();
 }
 
-void renderTree(PGraphics pg, float scale) {
+void renderTree(PGraphics pg, float scale, float offsetX, float offsetY) {
   pg.beginDraw();
   pg.background(prefs.backgroundColor);
   pg.pushMatrix();
-  pg.translate(pg.width/2 + userTranslateX, pg.height/2 + userTranslateY);
+  pg.translate(pg.width/2 + offsetX, pg.height/2 + offsetY);
 
   pg.noFill();
   pg.strokeWeight(3);
@@ -160,7 +163,7 @@ void drawBranches(PGraphics pg, PhyloNode node, float cx, float cy, float scale)
     float end = max(angle, cAngle);
 
     pg.pushStyle();
-    pg.stroke(child.branchColor);
+    pg.stroke(child.getBranchColor());
     pg.line(cX1, cY1, cX2, cY2);
     pg.arc(0, 0, radius * 2, radius * 2, -end, -start);
     pg.popStyle();
@@ -180,9 +183,9 @@ void drawNodes(PGraphics pg, PhyloNode node, float cx, float cy, float scale) {
 
   if (prefs.useImages && node.sprite != null) {
     pg.image(node.sprite, x, y, isHovered ? 48 : 32, isHovered ? 48 : 32);
-  } else {
+  } else if (prefs.showNodes) {
     pg.pushStyle();
-    pg.fill(node.branchColor);
+    pg.fill(node.getBranchColor());
     pg.circle(x, y, isHovered ? 16 : 8);
     pg.popStyle();
   }
@@ -243,7 +246,7 @@ void saveImageCheck() {
 
       // Use same scale calculation but without UI offsets
       float saveScale = 2500 * 0.45 / (maxDepth + 1);
-      renderTree(hiRes, saveScale);
+      renderTree(hiRes, saveScale, 0, 0);
 
       // Save high-resolution version
       hiRes.save(path);
