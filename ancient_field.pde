@@ -80,7 +80,7 @@ void setup() {
 
   // Preload all sprites
   preloadSprites();
-  loadTree("testTree.nwk");
+  loadTree(prefs.lastPath);
   buildMenuBar();
 }
 
@@ -245,7 +245,7 @@ void saveImageCheck() {
       PGraphics hiRes = createGraphics(5000, 5000);
 
       // Use same scale calculation but without UI offsets
-      float saveScale = 2500 * 0.45 / (maxDepth + 1);
+      float saveScale = 5000 * 0.45 / (maxDepth + 1);
       renderTree(hiRes, saveScale, 0, 0);
 
       // Save high-resolution version

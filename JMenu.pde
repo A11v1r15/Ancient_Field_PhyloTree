@@ -43,6 +43,7 @@ public class Menu_bar extends JFrame implements ActionListener {
     options_menu.setMnemonic('O');
     reset_view.setMnemonic('R');
     subtitles.setMnemonic('t');
+    preferences.setMnemonic('P');
     about_menu.setMnemonic('A');
     help.setMnemonic('H');
 
@@ -87,7 +88,9 @@ public class Menu_bar extends JFrame implements ActionListener {
       chooser.setFileFilter(filter);
       int returnVal = chooser.showOpenDialog(this);
       if (returnVal == JFileChooser.APPROVE_OPTION) {
-        loadTree(chooser.getSelectedFile().getPath());
+        prefs.lastPath = chooser.getSelectedFile().getPath();
+        prefs.save();
+        loadTree(prefs.lastPath);
       }
     } else if (source == export) {
       saveImage = true;

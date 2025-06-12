@@ -4,6 +4,7 @@ class AppPreferences {
   boolean showNodes = true;
   color backgroundColor = color(255);
   color branchColor = color(0);
+  String lastPath = "data" + File.separator + "testTree.nwk";
   
   void save() {
     JSONObject json = new JSONObject();
@@ -12,6 +13,7 @@ class AppPreferences {
     json.setBoolean("showNodes", showNodes);
     json.setInt("backgroundColor", backgroundColor);
     json.setInt("branchColor", branchColor);
+    json.setString("lastPath", lastPath);
     saveJSONObject(json, sketchPath("preferences.json"));
   }
   
@@ -23,6 +25,7 @@ class AppPreferences {
       showNodes = json.getBoolean("showNodes");
       backgroundColor = json.getInt("backgroundColor");
       branchColor = json.getInt("branchColor");
+      lastPath = json.getString("lastPath");
     } catch (Exception e) {
       println("No preferences found, using defaults");
       save();
