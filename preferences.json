@@ -1,5 +1,6 @@
 {
   "backgroundColor": -1,
+  "radialLabels": false,
   "branchColor": -16777216,
   "lastPath": "data\\testTree.nwk",
   "useImages": true,

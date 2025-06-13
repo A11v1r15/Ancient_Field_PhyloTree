@@ -223,10 +223,15 @@ class PreferencesDialog extends JDialog {
     JCheckBox imagesBox = new JCheckBox("", prefs.useImages);
     add(imagesBox);
     
-    // Node Labels
+    // Show Nodes
     add(new JLabel("Show Nodes:"));
     JCheckBox labelsBox = new JCheckBox("", prefs.showNodes);
     add(labelsBox);
+    
+    // Radial Labels
+    add(new JLabel("Radial Labels:"));
+    JCheckBox radialBox = new JCheckBox("", prefs.radialLabels);
+    add(radialBox);
     
     // Background Color
     add(new JLabel("Background Color:"));
@@ -260,6 +265,7 @@ class PreferencesDialog extends JDialog {
       prefs.alwaysShowTooltips = tooltipsBox.isSelected();
       prefs.useImages = imagesBox.isSelected();
       prefs.showNodes = labelsBox.isSelected();
+      prefs.radialLabels = radialBox.isSelected();
       prefs.backgroundColor = colorButton.getBackground().getRGB();
       prefs.branchColor = colorButtonB.getBackground().getRGB();
       prefs.save();

@@ -5,7 +5,8 @@ class AppPreferences {
   color backgroundColor = color(255);
   color branchColor = color(0);
   String lastPath = "data" + File.separator + "testTree.nwk";
-  
+  boolean radialLabels = false;
+
   void save() {
     JSONObject json = new JSONObject();
     json.setBoolean("alwaysShowTooltips", alwaysShowTooltips);
@@ -14,19 +15,23 @@ class AppPreferences {
     json.setInt("backgroundColor", backgroundColor);
     json.setInt("branchColor", branchColor);
     json.setString("lastPath", lastPath);
+    json.setBoolean("radialLabels", radialLabels);
+
     saveJSONObject(json, sketchPath("preferences.json"));
   }
-  
+
   void load() {
     try {
       JSONObject json = loadJSONObject(sketchPath("preferences.json"));
-      alwaysShowTooltips = json.getBoolean("alwaysShowTooltips");
-      useImages = json.getBoolean("useImages");
-      showNodes = json.getBoolean("showNodes");
-      backgroundColor = json.getInt("backgroundColor");
-      branchColor = json.getInt("branchColor");
-      lastPath = json.getString("lastPath");
-    } catch (Exception e) {
+      alwaysShowTooltips = json.getBoolean("alwaysShowTooltips", alwaysShowTooltips);
+      useImages = json.getBoolean("useImages", useImages);
+      showNodes = json.getBoolean("showNodes", showNodes);
+      backgroundColor = json.getInt("backgroundColor", backgroundColor);
+      branchColor = json.getInt("branchColor", branchColor);
+      lastPath = json.getString("lastPath", lastPath);
+      radialLabels = json.getBoolean("radialLabels", radialLabels);
+    }
+    catch (Exception e) {
       println("No preferences found, using defaults");
       save();
     }

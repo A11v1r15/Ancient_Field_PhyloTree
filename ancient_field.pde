@@ -46,8 +46,8 @@ class PhyloNode {
     }
     return this;
   }
-  
-  color getBranchColor(){
+
+  color getBranchColor() {
     return branchColor == 0 ? prefs.branchColor : branchColor;
   }
 }
@@ -72,7 +72,7 @@ float userTranslateY = 0;
 void setup() {
   size(800, 600); // Smaller initial size
   surface.setResizable(true); // Enable window resizing
-  
+
   prefs.load();
 
   treeCanvas = createGraphics(width, height);
@@ -211,18 +211,41 @@ void drawTooltips(PGraphics pg, PhyloNode node, float cx, float cy, float scale)
   if ((prefs.alwaysShowTooltips || isHovered) && !node.label.isEmpty()) {
     float tw = textWidth(node.label) + 10;
     float th = 20;
+    float hTw = tw/2;
+    float hTh = th/2;
 
     float tooltipOffset = 24;
     float angleToCenter = atan2(cy - y, x - cx);
-    float tx = x + cos(angleToCenter) * (tooltipOffset + tw/2);
-    float ty = y - sin(angleToCenter) * tooltipOffset;
 
     pg.pushStyle();
-    pg.fill(255, 230);
-    pg.rect(tx - tw/2, ty - th/2, tw, th, 5);
-    pg.fill(0);
-    pg.textAlign(CENTER, CENTER);
-    pg.text(node.label, tx, ty);
+    if (prefs.radialLabels) {
+      float tx = x + cos(angleToCenter) * tooltipOffset;
+      float ty = y - sin(angleToCenter) * tooltipOffset;
+      pg.textAlign(LEFT, CENTER);
+      pg.pushMatrix();
+      pg.translate(tx, ty);
+      float textAngle = -angleToCenter;
+      float labelOffset = 5;
+      if (angleToCenter > HALF_PI || angleToCenter < -HALF_PI) {
+        textAngle += PI; // Flip text for readability
+        labelOffset += tw - 10;
+        pg.textAlign(RIGHT, CENTER);
+      }
+      pg.rotate(textAngle);
+      pg.fill(255, 230);
+      pg.rect(-labelOffset, -hTh, tw, th, 5);
+      pg.fill(0);
+      pg.text(node.label, 0, 0);
+      pg.popMatrix();
+    } else {
+      float tx = x + cos(angleToCenter) * (tooltipOffset + tw/2 - 5);
+      float ty = y - sin(angleToCenter) * tooltipOffset;
+      pg.textAlign(CENTER, CENTER);
+      pg.fill(255, 230);
+      pg.rect(tx - hTw, ty - hTh, tw, th, 5);
+      pg.fill(0);
+      pg.text(node.label, tx, ty);
+    }
     pg.popStyle();
   }
 
